@@ -14,7 +14,7 @@ Update log:
 ---------------------------------------------------
 
 
-School Management System - Setup Instructions
+**School Management System - Setup Instructions**
 
 1. Make sure you have Python installed and an IDE like VS Code, Jupyter Notebook, or something.
    
@@ -33,7 +33,7 @@ School Management System - Setup Instructions
     
 13. You can use https://sqliteviewer.app/#/school.db/table/results/ to look at the school.db if you do not have SQLite to open .db files.
 
-I plan on changing school.db from the main db file to database.py or the sql file. I don't actually know how all the networking works. School.db is just a local DB file on your desktop. I thought the DB had to be like dynamic and update automatically from pc to pc. I just don't know how to do it.
+Running database.py will build a db file that isn't updated like the school.db file is right now. 
 
 Features:
 - Add students, subjects, assignments, and results
