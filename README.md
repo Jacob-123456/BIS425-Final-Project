@@ -9,7 +9,8 @@ Update log:
 
 5/3/26 - added visible updating table that shows data from db. The treeview function is just a builder function for all 4 tables to be easily made. (jacob)
 
-5/4/26 - Added login file. (jacob)
+5/4/26 - Added login file, added auth checker so no one can open and use main.py without logging in from login.py first (jacob)
+
 
 ---------------------------------------------------
 
