@@ -18,7 +18,7 @@ Update log:
 
 1. Make sure you have Python installed and an IDE like VS Code, Jupyter Notebook, or something.
    
-3. Install login.py, school.db, main.py.
+3. Install login.py, school.db, main.py, auth.py
    
 5. Put the files in a folder together.
    
