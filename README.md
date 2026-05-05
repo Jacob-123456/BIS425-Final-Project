@@ -11,6 +11,12 @@ Update log:
 
 5/4/26 - Added login file, added auth checker so no one can open and use main.py without logging in from login.py first (jacob)
 
+5/5/26 - added password resetting w/ security question check to reset password. 
+
+
+---------------------------------------------------
+
+**If someone could help me with a better-designed GUI, that'd be amazing. I'm an awful UI designer**
 
 ---------------------------------------------------
 
@@ -28,13 +34,12 @@ Update log:
 9. run login file to login (there's a debug force login to main.py).
 
    
-    Placeholder accounts: Username: 1, Pass: 1, account_type: student. User: 2, Pass: 2, account_type: teacher. User: 3, pass: 3, account_type: faculty.
+    Placeholder accounts: Username: 1, Pass: bob, account_type: student. User: 2, Pass: 2, account_type: teacher. User: 3, pass: 3, account_type: faculty.
     
-11. Run main.py if you want. **There's no verification to check if one is logged in or not, so you can just ignore the login file and run main.py. Fix later**.
     
-13. You can use https://sqliteviewer.app/#/school.db/table/results/ to look at the school.db if you do not have SQLite to open .db files.
+10. You can use https://sqliteviewer.app/#/school.db/table/results/ to look at the school.db if you do not have SQLite to open .db files.
 
-Running database.py will build a db file that isn't updated like the school.db file is right now. 
+Running database.py will build the school.db file, but the database.py's db structure isn't updated like the school.db file is right now. 
 
 Features:
 - Add students, subjects, assignments, and results
