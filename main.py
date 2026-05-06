@@ -7,7 +7,7 @@ import sys
 
 
 
-# ---------------- REFRESH FUNCTIONS ----------------
+# ---------------- REFRESH FUNCTIONS (for table) ----------------
 
 def refresh_students():
     for row in student_tree.get_children():
@@ -49,7 +49,7 @@ def refresh_results():
         result_tree.insert("", END, values=row)
     conn.close()
 
-def refresh_all():
+def refresh_all(): #refreshes all tables, used on startup and after any change to db.
     refresh_students()
     refresh_subjects()
     refresh_assignments()
@@ -137,7 +137,35 @@ def search_student():
         output.insert(END, "No results found")
     conn.close()
 
-# ---------------- HELPER: make a Treeview ----------------
+
+def create_account():
+    username = username_entry.get()
+    password = password_entry.get()
+    account_type = selected_account_type.get()
+    security_answer = security_question_entry.get()
+
+    conn = sqlite3.connect("school.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM usertable WHERE username = ?", (username,))
+    if cursor.fetchone():
+        output2.insert(END, "Username already exists")
+        conn.close()
+        return
+
+    if account_type == "Student":
+        cursor.execute("SELECT COUNT(*) FROM usertable WHERE account_type = 'Student'")
+        student_id = cursor.fetchone()[0] + 1
+        cursor.execute("INSERT OR REPLACE INTO students VALUES (?, ?)", (student_id, first_name_entry.get() + " " + last_name_entry.get()))
+    else:
+        student_id = None
+
+    cursor.execute("INSERT INTO usertable (username, student_id, password, account_type, security_question_answer) VALUES (?, ?, ?, ?, ?)",
+                   (username, student_id, password, account_type, security_answer))
+    conn.commit()
+    output2.insert(END, "Account created")
+    conn.close()
+# ---------------- this function builds the tables on the right ----------------
 
 def make_tree(parent, columns):
     frame = Frame(parent)
@@ -157,13 +185,23 @@ def make_tree(parent, columns):
 
 # ---------------- GUI ----------------
 
-
 root = Tk()
 root.title("School Management System")
 root.geometry("900x650")
 
+# ----------------- tab init ------------------
+notebook = ttk.Notebook(root)
+notebook.pack(fill="both", expand=True)
+
+tab1 = Frame(notebook)
+notebook.add(tab1, text="Dashboard",)
+notebook.bind("<<NotebookTabChanged>>", lambda e: refresh_all()) #refreshes tables when switching tabs.
+
+tab2 = Frame(notebook)
+notebook.add(tab2, text="Create & Manage Accounts")
+
 # --- Student ---
-student_frame = LabelFrame(root, text="Student", padx=10, pady=10)
+student_frame = LabelFrame(tab1, text="Student", padx=10, pady=10)
 student_frame.pack(fill="x", padx=10, pady=5)
 
 form_s = Frame(student_frame)
@@ -182,7 +220,7 @@ Button(form_s, text="Add Student", command=add_student).grid(row=2, column=0, co
 student_tree = make_tree(student_frame, ("student_id", "name"))
 
 # --- Subject ---
-subject_frame = LabelFrame(root, text="Subject", padx=10, pady=10)
+subject_frame = LabelFrame(tab1, text="Subject", padx=10, pady=10)
 subject_frame.pack(fill="x", padx=10, pady=5)
 
 form_sub = Frame(subject_frame)
@@ -201,7 +239,7 @@ Button(form_sub, text="Add Subject", command=add_subject).grid(row=2, column=0, 
 subject_tree = make_tree(subject_frame, ("subject_id", "name"))
 
 # --- Assignment ---
-assignment_frame = LabelFrame(root, text="Assignment", padx=10, pady=10)
+assignment_frame = LabelFrame(tab1, text="Assignment", padx=10, pady=10)
 assignment_frame.pack(fill="x", padx=10, pady=5)
 
 form_a = Frame(assignment_frame)
@@ -224,7 +262,7 @@ Button(form_a, text="Add Assignment", command=add_assignment).grid(row=3, column
 assignment_tree = make_tree(assignment_frame, ("assignment_id", "subject_id", "title"))
 
 # --- Result ---
-result_frame = LabelFrame(root, text="Result", padx=10, pady=10)
+result_frame = LabelFrame(tab1, text="Result", padx=10, pady=10)
 result_frame.pack(fill="x", padx=10, pady=5)
 
 form_r = Frame(result_frame)
@@ -251,7 +289,7 @@ Button(form_r, text="Add Result", command=add_result).grid(row=4, column=0, colu
 result_tree = make_tree(result_frame, ("id", "student_id", "assignment_id", "real_score", "letter", "max_score", "percentage_score"))
 
 # --- Search ---
-search_frame = LabelFrame(root, text="Search", padx=10, pady=10)
+search_frame = LabelFrame(tab1, text="Search", padx=10, pady=10)
 search_frame.pack(fill="x", padx=10, pady=5)
 
 Label(search_frame, text="Student Name").grid(row=0, column=0)
@@ -260,14 +298,62 @@ search_entry.grid(row=0, column=1)
 
 Button(search_frame, text="Search", command=search_student).grid(row=1, column=0, columnspan=2)
 
+
+
+
+#------------------- Tab 2 Data ---------------------
+
+##create account frame
+create_account_frame = LabelFrame(tab2, text="Create Account", padx=10, pady=10)
+create_account_frame.grid(row=0, column=0, padx=5, pady=5, columnspan=3, sticky="ew")
+
+
+##data input for demographic data.
+Label(create_account_frame, text="First name").grid(row=0, column=1)
+first_name_entry = Entry(create_account_frame)
+first_name_entry.grid(row=0, column=2)
+
+Label(create_account_frame, text="Last name").grid(row=1, column=1)
+last_name_entry = Entry(create_account_frame)
+last_name_entry.grid(row=1, column=2)
+
+#data input for account_required information.
+Label(create_account_frame, text="Username").grid(row=0, column=3)
+username_entry = Entry(create_account_frame)
+username_entry.grid(row=0, column=4)
+
+Label(create_account_frame, text="Password").grid(row=1, column=3)
+password_entry = Entry(create_account_frame, show="*")
+password_entry.grid(row=1, column=4)
+
+selected_account_type = StringVar()
+Label(create_account_frame, text="Account Type").grid(row=2, column=3)
+
+account_type_options = ["Student", "Teacher", "Faculty"]
+account_type_create_account = ttk.Combobox(create_account_frame, textvariable=selected_account_type, values=account_type_options, state="readonly")
+account_type_create_account.grid(row=2, column=4)
+
+Label(create_account_frame, text="What is the user's first pet's name?").grid(row=3, column=3)
+security_question_entry = Entry(create_account_frame)
+security_question_entry.grid(row=3, column=4)
+
+
+
+
+Button(create_account_frame, text="Create Account", command=create_account).grid(row=4, column=0, columnspan=1)
+
+
 # --- Output ---
-output = Listbox(root, width=90)
+output = Listbox(tab1, width=90)
 output.pack(padx=10, pady=10)
+
+output2 = Listbox(tab2, width=50, height=10)
+output2.grid(row=5, column=0, padx=10, pady=10)
 
 # Load existing data on startup
 refresh_all()
 
-if "verified" in sys.argv:
+if "verified" in sys.argv: #checks if logged in first, see login.py open_main function if you want to debug.
     root.mainloop()
 else:
     print("Unauthorized access. Please log in through the login screen.")
