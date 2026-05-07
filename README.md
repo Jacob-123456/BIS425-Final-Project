@@ -15,7 +15,7 @@ Update log:
 
 5/6/26 - added tabs in main.py and account creation (jacob).
 
-5/7/26 - added teacher.py, UI redesigned in login.py (jacob)
+5/7/26 - added teacher.py, UI redesigned in login.py. Database now hosted on mysql not sqlite, added student.py. (jacob).
 
 
 ---------------------------------------------------
@@ -25,23 +25,20 @@ Update log:
 
 1. Make sure you have Python installed and an IDE like VS Code, Jupyter Notebook, or something.
    
-3. Install login.py, database.py, school.db, main.py, auth.py, teacher.py. **OR download SMS folder.zip and unzip.** It has every file.
+3. It's recommended to just install SMS folder.zip and unzip it.
    
 5. Put the files in a folder together.
+
+6. Open MySQL, log in to localhost, import the SQL script, and run it.
    
 7. Open the entire folder in the IDE, or make sure each file is in your environment.
    
-9. run login file to login (there's a debug force login to main.py).
-    
-10. You can use https://sqliteviewer.app/#/school.db/table/results/ to look at the school.db if you do not have SQLite to open .db files.
+8. Run the login file FIRST so you can log in. There's a debug login for faculty to create accounts if you wish.
 
-**Running database.py will build the school.db's database structure**, but will have no data inside. 
 
 Features:
 - Add students, subjects, assignments, and results
 - Search student results
-- Data stored in SQLite database (school.db)
 
 Notes:
 - Enter IDs exactly (student_id, subject_id, etc.)
-- Run Database.py only if school.db is not included
