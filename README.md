@@ -15,7 +15,7 @@ Update log:
 
 5/6/26 - added tabs in main.py and account creation (jacob).
 
-5/7/26 - added teacher.py, UI redesigned in login.py. Database now hosted on mysql not sqlite, added student.py. (jacob).
+5/7/26 - added teacher.py, UI redesigned in login.py. Database now hosted on mysql not sqlite, added student.py, removed main.py unneeded functions. (jacob).
 
 
 ---------------------------------------------------
