@@ -15,10 +15,8 @@ Update log:
 
 5/6/26 - added tabs in main.py and account creation (jacob).
 
+5/7/26 - added teacher.py, UI redesigned in login.py (jacob)
 
----------------------------------------------------
-
-**If someone could help me with a better-designed GUI, that'd be amazing. I'm an awful UI designer**
 
 ---------------------------------------------------
 
@@ -27,7 +25,7 @@ Update log:
 
 1. Make sure you have Python installed and an IDE like VS Code, Jupyter Notebook, or something.
    
-3. Install login.py, database.py, school.db, main.py, auth.py. **OR download SMS folder.zip and unzip.** It has every file.
+3. Install login.py, database.py, school.db, main.py, auth.py, teacher.py. **OR download SMS folder.zip and unzip.** It has every file.
    
 5. Put the files in a folder together.
    
