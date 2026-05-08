@@ -1,18 +1,25 @@
 from tkinter import *
 from tkinter import ttk
-import sqlite3
 import subprocess
 import sys
 import importlib.util
 import os
 import auth
+from mySQL_DB import get_conn
 
-# ── dependency check ──────────────────────────────────────────────────────────
+# ── checks if have important imports, if not, it installs
 if importlib.util.find_spec("bcrypt") is None:
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "bcrypt"])
     except:
         subprocess.check_call(["uv", "pip", "install", "bcrypt"],
+                              env={**os.environ, "VIRTUAL_ENV": ".venv"})
+
+if importlib.util.find_spec("mysql.connector") is None:
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "mysql-connector-python"])
+    except:
+        subprocess.check_call(["uv", "pip", "install", "mysql-connector-python"],
                               env={**os.environ, "VIRTUAL_ENV": ".venv"})
 
 import bcrypt
@@ -27,28 +34,28 @@ def is_bcrypt_hash(value: bytes | str) -> bool:
     return value.startswith((b"$2a$", b"$2b$", b"$2y$"))
 
 def hash_usertable_passwords():
-    conn = sqlite3.connect("school.db")
+    conn = get_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT rowid, password FROM usertable")
-    for rowid, password in cursor.fetchall():
+    cursor.execute("SELECT user_id, password FROM usertable")
+    for user_id, password in cursor.fetchall():
         raw = password.encode("utf-8") if isinstance(password, str) else password
         if is_bcrypt_hash(raw):
             continue
-        cursor.execute("UPDATE usertable SET password = ? WHERE rowid = ?",
-                       (hash_password(raw.decode("utf-8")), rowid))
+        cursor.execute("UPDATE usertable SET password = %s WHERE user_id = %s",
+                       (hash_password(raw.decode("utf-8")), user_id))
     conn.commit()
     conn.close()
 
 def hash_usertable_security_questions():
-    conn = sqlite3.connect("school.db")
+    conn = get_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT rowid, security_question_answer FROM usertable")
-    for rowid, answer in cursor.fetchall():
+    cursor.execute("SELECT user_id, security_question_answer FROM usertable")
+    for user_id, answer in cursor.fetchall():
         raw = answer.encode("utf-8") if isinstance(answer, str) else answer
         if is_bcrypt_hash(raw):
             continue
-        cursor.execute("UPDATE usertable SET security_question_answer = ? WHERE rowid = ?",
-                       (hash_password(raw.decode("utf-8")), rowid))
+        cursor.execute("UPDATE usertable SET security_question_answer = %s WHERE user_id = %s",
+                       (hash_password(raw.decode("utf-8")), user_id))
     conn.commit()
     conn.close()
 
@@ -66,6 +73,11 @@ def open_main():
     subprocess.Popen([sys.executable, os.path.join(base_dir, "main.py"), "verified"])
     root.destroy()
 
+def open_student(user_id):
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    subprocess.Popen([sys.executable, os.path.join(base_dir, "student.py"), "verified", str(user_id)])
+    root.destroy()
+
 # ── login logic ───────────────────────────────────────────────────────────────
 def login_check():
     username = username_entry.get().strip()
@@ -76,9 +88,9 @@ def login_check():
         log("Please fill in all fields.")
         return
 
-    conn = sqlite3.connect("school.db")
+    conn = get_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT user_id, username, password, account_type FROM usertable WHERE username=?", (username,))
+    cursor.execute("SELECT user_id, username, password, account_type FROM usertable WHERE username = %s", (username,))
     result = cursor.fetchone()
     conn.close()
 
@@ -101,6 +113,8 @@ def login_check():
             open_main()
         elif account_type == "Teacher":
             open_teacher(user_id)
+        elif account_type == "Student":
+            open_student(user_id)
     else:
         log("Incorrect password.")
 
@@ -110,7 +124,7 @@ def log(msg):
     output.see(END)
     output.config(state=DISABLED)
 
-# ── forgot password ───────────────────────────────────────────────────────────
+# ── forgot password ───────────────────────
 def forgot_password_1():
     global forgot_window, password_output
     global forgot_password1_username_input, username_entry_forgot, forgot_password_button_1
@@ -148,9 +162,9 @@ def forgot_password_2():
     global username_entry_forgot_data
     username_entry_forgot_data = username_entry_forgot.get().strip()
 
-    conn = sqlite3.connect("school.db")
+    conn = get_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT username FROM usertable WHERE username=?", (username_entry_forgot_data,))
+    cursor.execute("SELECT username FROM usertable WHERE username = %s", (username_entry_forgot_data,))
     result = cursor.fetchone()
     conn.close()
 
@@ -183,28 +197,32 @@ def forgot_password_2():
         btn_frame.destroy()
         forgot_password_3()
 
-    Button(btn_frame, text="Next →", command=submit,
+    Button(btn_frame, text="Next", command=submit,
            bg=ACCENT, fg="white", font=FONT, relief=FLAT, padx=16, pady=6, cursor="hand2").pack(side=LEFT, padx=5)
-    Button(btn_frame, text="← Back", command=lambda: [forgot_window.destroy(), forgot_password_1()],
+    Button(btn_frame, text="Back", command=lambda: [forgot_window.destroy(), forgot_password_1()],
            bg="#555", fg="white", font=FONT, relief=FLAT, padx=16, pady=6, cursor="hand2").pack(side=LEFT, padx=5)
 
 
 def forgot_password_3():
-    conn = sqlite3.connect("school.db")
+    conn = get_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT security_question_answer FROM usertable WHERE username=?", (username_entry_forgot_data,))
+    cursor.execute("SELECT security_question_answer FROM usertable WHERE username = %s", (username_entry_forgot_data,))
     result = cursor.fetchone()
     conn.close()
+    stored_hash = result[0]
 
-    if bcrypt.checkpw(security_question_entry_global.encode("utf-8"), result[0]):
-        forgot_log("Security question correct. Enter your new password.")
+    if isinstance(stored_hash, str):
+        stored_hash = stored_hash.encode("utf-8")
+
+    if bcrypt.checkpw(security_question_entry_global.encode("utf-8"),
+    stored_hash):
 
         form3 = Frame(forgot_window, bg=BG)
         form3.pack(padx=30, fill="x")
 
         Label(form3, text="New Password", bg=BG, fg=FG, font=FONT).grid(row=0, column=0, sticky="w", pady=4)
         global new_password_entry
-        new_password_entry = Entry(form3, width=28, font=FONT, show="*")
+        new_password_entry = Entry(form3, width=28, font=FONT)
         new_password_entry.grid(row=0, column=1, pady=4, padx=(8, 0))
 
         btn_frame = Frame(forgot_window, bg=BG)
@@ -212,7 +230,7 @@ def forgot_password_3():
 
         Button(btn_frame, text="Reset Password", command=reset_password,
                bg="#27ae60", fg="white", font=FONT, relief=FLAT, padx=16, pady=6, cursor="hand2").pack(side=LEFT, padx=5)
-        Button(btn_frame, text="← Back", command=lambda: [forgot_window.destroy(), forgot_password_1()],
+        Button(btn_frame, text="Back", command=lambda: [forgot_window.destroy(), forgot_password_1()],
                bg="#555", fg="white", font=FONT, relief=FLAT, padx=16, pady=6, cursor="hand2").pack(side=LEFT, padx=5)
     else:
         forgot_log("Incorrect answer. Try again.")
@@ -230,9 +248,9 @@ def reset_password():
         forgot_log("Password cannot be empty.")
         return
     hashed = hash_password(new_password)
-    conn = sqlite3.connect("school.db")
+    conn = get_conn()
     cursor = conn.cursor()
-    cursor.execute("UPDATE usertable SET password=? WHERE username=?", (hashed, username_entry_forgot_data))
+    cursor.execute("UPDATE usertable SET password = %s WHERE username = %s", (hashed, username_entry_forgot_data))
     conn.commit()
     conn.close()
     forgot_log("Password reset successfully. You may close this window.")
@@ -247,7 +265,7 @@ FONT   = ("Segoe UI", 10)
 # ── root window ───────────────────────────────────────────────────────────────
 root = Tk()
 root.title("School Management System — Login")
-root.geometry("420x520")
+root.geometry("420x620")
 root.resizable(False, False)
 root.configure(bg=BG)
 
@@ -263,14 +281,6 @@ Label(title_frame, text="Sign in Page",
 card = Frame(root, bg=PANEL, padx=30, pady=24)
 card.pack(padx=30, pady=24, fill="x")
 
-def field(parent, label, row, hide=False):
-    Label(parent, text=label, bg=PANEL, fg=FG, font=FONT, anchor="w").grid(
-        row=row, column=0, sticky="w", pady=(8, 2), columnspan=2)
-    e = Entry(parent, font=FONT, width=30, show="*" if hide else "", bg="#0d1b2a",
-              fg="white", insertbackground="white", relief=FLAT, bd=6)
-    e.grid(row=row+1, column=0, columnspan=2, sticky="ew", ipady=4)
-    return e
-
 card.columnconfigure(0, weight=1)
 
 Label(card, text="Username", bg=PANEL, fg=FG, font=FONT, anchor="w").grid(
@@ -281,7 +291,7 @@ username_entry.grid(row=1, column=0, columnspan=2, sticky="ew", ipady=4)
 
 Label(card, text="Password", bg=PANEL, fg=FG, font=FONT, anchor="w").grid(
     row=2, column=0, sticky="w", pady=(10, 2), columnspan=2)
-password_entry = Entry(card, font=FONT, width=30, show="*", bg="#0d1b2a", fg="white",
+password_entry = Entry(card, font=FONT, width=30, bg="#0d1b2a", fg="white",
                        insertbackground="white", relief=FLAT, bd=6)
 password_entry.grid(row=3, column=0, columnspan=2, sticky="ew", ipady=4)
 
